@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABC Company — landing page experiment</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="icon" href="data:,">
+</head>
+<body>
+
+{% if offline_demo %}
+  <div class="banner">
+    <strong>Offline demo mode.</strong>
+    Not connected to LaunchDarkly — the flag and a running 50/50 experiment
+    rollout are served by an in-process data source using the SDK's real
+    evaluation engine. Events go nowhere, so there is nothing to analyse in the
+    LaunchDarkly UI. Restart without <code>OFFLINE_DEMO=1</code> to use your own
+    account.
+    <span class="banner-actions">
+      <button class="btn btn-tiny" data-offline-experiment="true">Start experiment</button>
+      <button class="btn btn-tiny" data-offline-experiment="false">Stop experiment</button>
+    </span>
+  </div>
+{% endif %}
+
+<header class="topbar">
+  <div class="topbar-title">
+    <span class="dot"></span>
+    ABC Company · measuring the landing page revamp
+  </div>
+
+  {# Each button reloads the page as a different LaunchDarkly context. The two
+     greyed-out names are the ones the experiment deliberately excludes. #}
+  <div class="visitor-switch" role="group" aria-label="View as visitor">
+    <span class="visitor-switch-label">View as</span>
+    {% for visitor_id, visitor in visitors.items() %}
+      <a class="visitor-btn {% if visitor_id == state.visitor.id %}is-active{% endif %}
+                {% if not visitor.expected_in_experiment %}is-excluded{% endif %}"
+         href="?visitor={{ visitor_id }}"
+         title="{{ visitor.title }}{% if not visitor.expected_in_experiment %} — excluded from the experiment{% endif %}">
+        {{ visitor.name }}
+      </a>
+    {% endfor %}
+    <a class="visitor-btn is-anon {% if state.visitor.id == 'anon' %}is-active{% endif %}"
+       href="?visitor=anon"
+       title="Draw a brand-new visitor with a fresh key and watch which arm they land in">
+      + New visitor
+    </a>
+  </div>
+</header>
+
+<main class="layout">
+
+  {# ------------------------------------------------------------------- #}
+  {# The flagged component. Which hero appears here was decided by the    #}
+  {# experiment's random allocation, not by anything in this template.    #}
+  {# ------------------------------------------------------------------- #}
+  <div class="page-column">
+    <div id="hero-mount" class="hero-mount">
+      {% include "hero.html" %}
+    </div>
+  </div>
+
+  {# ------------------------------------------------------------------- #}
+  {# The experiment inspector. Not part of the landing page — it exists   #}
+  {# to make the allocation visible while you demo.                       #}
+  {# ------------------------------------------------------------------- #}
+  <aside class="rail">
+
+    <section class="card">
+      <h2>Is this visitor in the experiment?</h2>
+      <span class="exp-badge {% if state.inExperiment %}is-in{% else %}is-out{% endif %}">
+        {% if state.inExperiment %}IN THE EXPERIMENT{% else %}NOT IN THE EXPERIMENT{% endif %}
+      </span>
+      <p class="reason">{{ state.reasonText }}</p>
+      <p class="expected {% if state.expected.matches %}ok{% else %}pending{% endif %}">
+        {% if state.expected.matches %}✓{% else %}·{% endif %}
+        Expected: {% if state.expected.inExperiment %}in the experiment{% else %}excluded{% endif %}
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Allocation</h2>
+      <p class="flag-key">
+        flag <code>{{ state.flagKey }}</code><br>
+        experiment <code>{{ state.experimentKey }}</code>
+      </p>
+      <div class="variation-row">
+        <span class="variation-pill var-{{ state.variation }}">{{ state.variation }}</span>
+        <span class="muted small">{{ state.arm }}</span>
+      </div>
+      <p class="muted small">
+        Reason <span class="mechanism mech-{{ state.mechanism }}">{{ state.reasonKind }}</span>
+        · variation index {{ state.variationIndex }}
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Randomisation unit</h2>
+      <p class="ctx-identity">
+        <span>{{ state.visitor.name }}</span>
+        <span class="muted small">{{ state.visitor.key }}</span>
+      </p>
+      <p class="ctx-blurb">{{ state.visitor.blurb }}</p>
+      <p class="muted small">
+        LaunchDarkly hashes this <b>context key</b> to pick an arm, and uses the
+        same key to join metric events back to it. Reload the page — the key does
+        not change, so neither does the arm.
+      </p>
+      <div class="chips">
+        {% for name, value in state.attributes.items() %}
+          <span class="chip"><b>{{ name }}</b>{{ value }}</span>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Metrics</h2>
+      <p class="muted small">
+        The hero's primary button sends
+        <code>{{ state.primaryMetricKey }}</code>{% if state.secondaryMetricKey %}
+        and <code>{{ state.secondaryMetricKey }}</code>{% endif %}
+        for this exact context.
+      </p>
+      <button class="btn btn-tiny" id="send-conversion">Send a conversion event</button>
+      <p id="cta-result" class="muted small">
+        Or click the hero's own call-to-action button — it does the same thing.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>This session</h2>
+      <p class="muted small">
+        A local tally, so a click gives immediate feedback. The real numbers are
+        on LaunchDarkly's Experiments tab and take a few minutes to appear.
+      </p>
+      <table class="tally" id="tally">
+        <thead>
+          <tr><th>Arm</th><th>Exposed</th><th>Converted</th></tr>
+        </thead>
+        <tbody>
+          {% for arm, counts in state.tally.items() %}
+            <tr><td><code>{{ arm }}</code></td><td>{{ counts.exposures }}</td><td>{{ counts.conversions }}</td></tr>
+          {% else %}
+            <tr><td colspan="3" class="muted small">Nothing yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="muted small">
+        This is far too little data to decide anything — which is exactly why
+        <code>simulate_traffic.py</code> exists. Run it to generate the thousands
+        of visitors an experiment actually needs.
+      </p>
+    </section>
+
+  </aside>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  window.__STATE__ = {
+    visitor: {{ state.visitor.id | tojson }},
+    key: {{ state.visitor.key | tojson }}
+  };
+</script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

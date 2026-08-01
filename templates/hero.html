@@ -1,0 +1,91 @@
+{#
+  One hero variation, rendered from the view model in components/hero.py.
+
+  There is a single template for all three variations rather than one template
+  each: the variations differ in content and emphasis, not in structure, and a
+  shared template makes it obvious that only the *data* is being flagged. The
+  `hero.theme` class is what drives the visual differences in styles.css.
+
+  This template never mentions LaunchDarkly. It is handed a view model and
+  renders it.
+#}
+<section class="hero theme-{{ hero.theme }}" data-variation="{{ hero.variation }}">
+
+  {% if hero.is_unknown_variation %}
+    {# Defensive: a variation was added in LaunchDarkly that this build does not
+       know about, so build_hero() fell back to the control. #}
+    <p class="hero-warning">
+      Unknown variation <code>{{ hero.requested_variation }}</code> — showing the
+      control hero. Deploy the code for this variation before targeting anyone to it.
+    </p>
+  {% endif %}
+
+  <nav class="hero-nav" aria-label="Primary">
+    <span class="hero-brand">{{ hero.product_name }}</span>
+    <ul>
+      {% for item in hero.nav %}<li>{{ item }}</li>{% endfor %}
+    </ul>
+    <span class="hero-nav-cta">Sign in</span>
+  </nav>
+
+  <div class="hero-body">
+    <div class="hero-copy">
+      {% if hero.eyebrow %}
+        <p class="hero-eyebrow">
+          {% if hero.badge %}<span class="hero-badge">{{ hero.badge }}</span>{% endif %}
+          {{ hero.eyebrow }}
+        </p>
+      {% endif %}
+
+      <h1 class="hero-headline">{{ hero.headline }}</h1>
+      <p class="hero-subhead">{{ hero.subhead }}</p>
+
+      <ul class="hero-bullets">
+        {% for bullet in hero.bullets %}
+          <li>{{ bullet }}</li>
+        {% endfor %}
+      </ul>
+
+      <div class="hero-ctas">
+        {# The primary CTA is wired to the conversion metric in static/js/app.js
+           so each variation can be compared on real behaviour. #}
+        <button class="btn btn-primary" id="hero-cta">{{ hero.primary_cta }}</button>
+        {% if hero.secondary_cta %}
+          <button class="btn btn-ghost">{{ hero.secondary_cta }}</button>
+        {% endif %}
+      </div>
+
+      {% if hero.testimonial %}
+        <figure class="hero-testimonial">
+          <blockquote>{{ hero.testimonial.quote }}</blockquote>
+          <figcaption>{{ hero.testimonial.attribution }}</figcaption>
+        </figure>
+      {% endif %}
+    </div>
+
+    <aside class="hero-aside">
+      {% if hero.stats %}
+        <ul class="hero-stats">
+          {% for stat in hero.stats %}
+            <li>
+              <span class="stat-value">{{ stat.value }}</span>
+              <span class="stat-label">{{ stat.label }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        {# The control has no stats block; a neutral product mock keeps the
+           layout balanced so the comparison is about content, not empty space. #}
+        <div class="hero-mock" aria-hidden="true">
+          <div class="mock-bar"></div>
+          <div class="mock-row"></div>
+          <div class="mock-row short"></div>
+          <div class="mock-row"></div>
+          <div class="mock-row short"></div>
+        </div>
+      {% endif %}
+    </aside>
+  </div>
+
+  <p class="hero-note">{{ hero.label }} · {{ hero.note }}</p>
+</section>
