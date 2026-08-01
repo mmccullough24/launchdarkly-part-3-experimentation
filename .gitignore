@@ -19,4 +19,7 @@ venv/
 .DS_Store
 
 # Claude Code local settings — per-machine, not part of the deliverable.
+# The `.tmp.` pattern catches the atomic-write temp files the settings writer
+# leaves behind if it is interrupted.
 .claude/settings.local.json
+.claude/*.tmp.*
