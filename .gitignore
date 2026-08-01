@@ -1,0 +1,22 @@
+# Secrets — never commit a real SDK key or API token.
+.env
+
+# Simulation output. Every run writes a JSON file here; they are local
+# artifacts, not part of the deliverable. The directory itself is kept.
+results/*.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Editors / OS
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+
+# Claude Code local settings — per-machine, not part of the deliverable.
+.claude/settings.local.json

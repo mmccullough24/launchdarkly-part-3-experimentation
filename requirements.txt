@@ -1,0 +1,22 @@
+# The LaunchDarkly server-side SDK for Python. This is the only LaunchDarkly
+# dependency the demo needs. Experiment allocation, the `inExperiment` flag on
+# an evaluation reason, and the custom metric events that feed the experiment
+# are all built in — there is no separate "experimentation SDK".
+launchdarkly-server-sdk>=9.16.1,<10
+
+# Web framework for the interactive landing page (`app.py`). The traffic
+# simulator does not need it, but installing everything at once keeps setup to
+# a single command.
+flask>=3.0,<4
+
+# Loads the SDK key and other settings from your local .env file.
+python-dotenv>=1.0
+
+# Used by scripts/setup_launchdarkly.py to create the metrics and the
+# experiment through the LaunchDarkly REST API. Not needed to run the demo.
+requests>=2.31
+
+# NOTE: there is deliberately no numpy/scipy/pandas here. The statistics in
+# analysis.py are implemented against the standard library `math` module so
+# that this repository installs quickly on any machine and you can read the
+# arithmetic behind every number the demo prints.
